@@ -3,46 +3,43 @@ from typing import List
 
 from .scenario import Scenario, Instance, Reference, TRAIN_SPLIT, TEST_SPLIT, CORRECT_TAG, Input, Output
 
-
 class MarkScenario2(Scenario):
     """
-    A silly task for debugging the infrastructure where the input is a random
-    sequence of tokens and the output is one of those tokens.
+    A task where the input is a play in the game of Rock, Paper, Scissors and the output
+    is the move that would beat the input play.
 
     Example:
 
-        2 5 3 -> 2
-        1 4 0 -> 0
+        rock -> paper
+        paper -> scissors
+        scissors -> rock
     """
 
     name = "markscenario2"
-    description = "Some trivia about Mark Saroufim"
+    description = "Rock, Paper, Scissors game"
     tags = ["markscenario2"]
 
-    def __init__(self, num_input_tokens: int, vocab_size: int, num_train_instances: int, num_test_instances: int):
+    def __init__(self, num_train_instances: int, num_test_instances: int, **kwargs):
         super().__init__()
-        self.num_input_tokens = num_input_tokens
-        self.vocab_size = vocab_size
         self.num_train_instances = num_train_instances
         self.num_test_instances = num_test_instances
+        self.moves = ['rock', 'paper', 'scissors']
+        self.winning_moves = {'rock': 'paper', 'paper': 'scissors', 'scissors': 'rock'}
 
     def get_instances(self) -> List[Instance]:
         random.seed(1)
 
-        def generate_seq() -> List[str]:
-            """An input is just a random sequence of tokens (e.g., 4 2 5 6)."""
-            return [str(random.randint(0, self.vocab_size - 1)) for _ in range(self.num_input_tokens)]
-
         def generate_instance(split: str) -> Instance:
             """Generate a random instance with `tags`."""
-            tokens: List[str] = generate_seq()
-            input: str = " ".join(tokens)
-            output: str = random.choice(tokens)
+            input_move: str = random.choice(self.moves)
+            output_move: str = self.winning_moves[input_move]
+            wrong_move: str = next(move for move in self.moves if move != output_move)
+
             references: List[Reference] = [
-                Reference(Output(text=output), tags=[CORRECT_TAG]),  # Correct output
-                Reference(Output(text="-1"), tags=[]),  # Wrong output
+                Reference(Output(text=output_move), tags=[CORRECT_TAG]),  # Correct output
+                Reference(Output(text=wrong_move), tags=[]),  # Wrong output
             ]
-            return Instance(Input(text=input), references=references, split=split)
+            return Instance(Input(text=input_move), references=references, split=split)
 
         def generate_instances(num_instances: int, split: str):
             return [generate_instance(split) for _ in range(num_instances)]
